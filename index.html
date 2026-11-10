@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Two Truths &amp; A Lie</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg1: #1e1b4b;
+    --bg2: #6d28d9;
+    --accent: #facc15;
+    --good: #22c55e;
+    --bad: #ef4444;
+    --card: rgba(255, 255, 255, 0.1);
+    --card-border: rgba(255, 255, 255, 0.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Poppins", system-ui, sans-serif;
+    min-height: 100vh;
+    color: #fff;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2), #db2777);
+    background-size: 300% 300%;
+    animation: bgShift 18s ease infinite;
+    overflow-x: hidden;
+  }
+  @keyframes bgShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .screen {
+    display: none;
+    min-height: 100vh;
+    padding: 32px 24px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.5s ease;
+  }
+  .screen.active { display: flex; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: none; }
+  }
+  .hidden { display: none !important; }
+
+  /* Title */
+  .title-emoji { font-size: 80px; animation: bob 2.5s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-12px) rotate(-5deg); } }
+  h1 {
+    font-size: clamp(42px, 8vw, 88px);
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.05;
+    margin: 16px 0;
+    text-shadow: 0 6px 30px rgba(0, 0, 0, 0.35);
+  }
+  h1 .lie { color: var(--accent); font-style: italic; }
+  .subtitle { font-size: 20px; opacity: 0.85; text-align: center; max-width: 620px; margin-bottom: 40px; }
+
+  .btn {
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 20px;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 40px;
+    cursor: pointer;
+    background: var(--accent);
+    color: #1e1b4b;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.big { font-size: 26px; padding: 20px 64px; }
+  .btn.ghost { background: transparent; color: #fff; border: 2px solid rgba(255, 255, 255, 0.6); box-shadow: none; }
+
+  /* Round */
+  .round-wrap { width: 100%; max-width: 960px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .pill {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-weight: 600;
+  }
+  .progress { flex: 1; height: 8px; background: rgba(255, 255, 255, 0.15); border-radius: 99px; margin: 0 16px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--accent); transition: width 0.4s; }
+
+  h2 { font-size: clamp(26px, 4vw, 38px); text-align: center; margin-bottom: 18px; }
+  h2 .who { color: var(--accent); }
+
+  /* Timer */
+  .timer {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    padding: 8px 10px 8px 22px;
+    margin-bottom: 20px;
+  }
+  .timer-label { font-weight: 600; white-space: nowrap; }
+  .timer-bar { flex: 1; height: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 99px; overflow: hidden; }
+  .timer-bar > div { height: 100%; width: 100%; background: var(--good); border-radius: 99px; transition: width 0.25s linear, background 0.3s; }
+  .timer-num { font-size: 26px; font-weight: 800; min-width: 56px; text-align: center; font-variant-numeric: tabular-nums; }
+  .timer.warn .timer-bar > div { background: var(--accent); }
+  .timer.danger .timer-bar > div { background: var(--bad); }
+  .timer.danger .timer-num { color: #fca5a5; animation: pulse 1s infinite; }
+  .timer.done .timer-num { color: #fca5a5; }
+  @keyframes pulse { 50% { transform: scale(1.2); } }
+  .icon-btn {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    white-space: nowrap;
+  }
+  .icon-btn:hover { background: rgba(255, 255, 255, 0.28); }
+  .icon-btn.start { background: var(--good); font-size: 16px; padding: 8px 20px; }
+  .icon-btn.start:hover { background: #16a34a; }
+
+  /* Facts */
+  .facts { display: grid; gap: 14px; margin-bottom: 22px; }
+  .fact {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    background: var(--card);
+    border: 2px solid var(--card-border);
+    border-radius: 20px;
+    padding: 18px 24px;
+    font-size: clamp(17px, 2.1vw, 22px);
+    backdrop-filter: blur(8px);
+    transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .fact .num {
+    flex-shrink: 0;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--accent);
+    color: #1e1b4b;
+    font-weight: 800;
+    font-size: 22px;
+  }
+  .facts.clickable .fact { cursor: pointer; }
+  .facts.clickable .fact:hover { transform: scale(1.02); border-color: rgba(255, 255, 255, 0.7); }
+  .fact.picked { border-color: var(--bad); background: rgba(239, 68, 68, 0.25); }
+  .fact.picked .num { background: var(--bad); color: #fff; }
+  .fact .tag, .fact .stamp {
+    position: absolute;
+    top: -12px;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 99px;
+    display: none;
+  }
+  .fact .tag { right: 16px; background: var(--bad); }
+  .fact .stamp { left: 16px; background: var(--accent); color: #1e1b4b; }
+  .fact.picked .tag { display: block; }
+  .fact.actual { border-color: var(--accent); background: rgba(250, 204, 21, 0.22); transform: scale(1.02); }
+  .fact.actual .num { background: var(--accent); color: #1e1b4b; }
+  .fact.actual .stamp { display: block; }
+
+  /* Panels */
+  .panel {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 22px;
+    text-align: center;
+  }
+  .panel h3 { font-size: 22px; margin-bottom: 6px; }
+  .hint { opacity: 0.8; margin-bottom: 14px; }
+  .big-msg { font-size: 22px; }
+
+  .names {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 14px 0 18px;
+  }
+  .name-btn {
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s, border-color 0.2s;
+  }
+  .name-btn:hover:not(:disabled) { transform: translateY(-2px); border-color: #fff; }
+  .name-btn.selected { background: var(--accent); color: #1e1b4b; border-color: var(--accent); }
+  .name-btn:disabled { cursor: default; opacity: 0.35; }
+  .name-btn.right { background: var(--good); border-color: var(--good); color: #fff; opacity: 1; transform: scale(1.12); }
+  .name-btn.wrong { background: var(--bad); border-color: var(--bad); color: #fff; opacity: 1; text-decoration: line-through; }
+
+  .reveal-caption { font-size: 20px; margin-bottom: 4px; }
+  .reveal-name {
+    font-size: clamp(40px, 7vw, 72px);
+    font-weight: 800;
+    color: var(--accent);
+    animation: pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+    text-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
+    margin-bottom: 8px;
+  }
+  .reveal-name.correct { color: var(--good); }
+  @keyframes pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .flash-good { animation: flashGood 0.9s; }
+  @keyframes flashGood { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 6px var(--good), 0 0 60px var(--good); } }
+
+  /* Story */
+  .story-wrap { width: 100%; max-width: 900px; text-align: center; }
+  .mic { font-size: 70px; animation: bob 2.5s ease-in-out infinite; }
+  .story-wrap .facts { text-align: left; margin-top: 28px; }
+  .verdict { font-size: 26px; font-weight: 800; min-height: 40px; margin-bottom: 20px; }
+
+  canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+  .end-names { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-width: 700px; margin-bottom: 40px; }
+  .end-names .pill { font-size: 18px; }
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+
+<!-- Title screen -->
+<section class="screen active" id="title-screen">
+  <div class="title-emoji">🤥</div>
+  <h1>Two Truths<br />&amp; <span class="lie">A Lie</span></h1>
+  <p class="subtitle">Three facts. One person. One sneaky lie.<br />Guess who wrote them, then sniff out the fib!</p>
+  <button class="btn big" id="start-btn">Start Game ▶</button>
+</section>
+
+<!-- Round screen -->
+<section class="screen" id="round-screen">
+  <div class="round-wrap">
+    <div class="topbar">
+      <span class="pill" id="round-label">Person 1 of 10</span>
+      <div class="progress"><div id="progress-bar"></div></div>
+      <span class="pill" id="score-label">⭐ 0</span>
+    </div>
+
+    <h2 id="round-heading">Whose facts are these? 🤔</h2>
+
+    <div class="timer" id="timer">
+      <span class="timer-label" id="timer-label">📖 Reading time</span>
+      <div class="timer-bar"><div id="timer-fill"></div></div>
+      <span class="timer-num" id="timer-num">30</span>
+      <button class="icon-btn start" id="timer-start-btn">▶ Start</button>
+      <button class="icon-btn hidden" id="pause-btn">⏸ Pause</button>
+      <button class="icon-btn" id="skip-btn">Skip ⏭</button>
+    </div>
+
+    <div class="facts" id="facts"></div>
+
+    <!-- Reading / discussion message -->
+    <div class="panel big-msg" id="msg-panel"></div>
+
+    <!-- Host picks the team's top 2 names -->
+    <div class="panel hidden" id="pick-panel">
+      <h3>🗳️ Host: pick the team's top 2 guesses</h3>
+      <div class="names" id="names"></div>
+      <button class="btn" id="reveal-btn" disabled>Reveal the Name 🎭</button>
+    </div>
+
+    <!-- Name revealed, discuss and lock the lie -->
+    <div class="panel hidden" id="reveal-panel">
+      <div class="reveal-caption" id="reveal-caption"></div>
+      <div class="reveal-name" id="reveal-name"></div>
+      <div class="names" id="result-names"></div>
+      <p class="hint" id="lie-hint">💬 Start the timer and discuss. Host: click the fact the team thinks is the <b>lie</b>, then lock it in.</p>
+      <button class="btn" id="lock-btn" disabled>🔒 Lock it in &amp; hear the story</button>
+    </div>
+  </div>
+</section>
+
+<!-- Story screen -->
+<section class="screen" id="story-screen">
+  <div class="story-wrap">
+    <div class="mic">🎤</div>
+    <h1 style="font-size: clamp(36px, 6vw, 64px);">Story time with <span class="lie" id="story-name"></span>!</h1>
+    <p class="subtitle" style="margin: 0 auto;">Tell us the stories behind your facts... and which one was the lie?</p>
+    <div class="facts clickable" id="story-facts"></div>
+    <p class="hint" id="story-hint">👆 Host: click the <b>actual</b> lie to reveal it</p>
+    <div class="verdict" id="verdict"></div>
+    <button class="btn" id="next-btn">Next Person ➜</button>
+  </div>
+</section>
+
+<!-- End screen -->
+<section class="screen" id="end-screen">
+  <div class="title-emoji">🏆</div>
+  <h1>That's a <span class="lie">wrap!</span></h1>
+  <p class="subtitle" id="end-score"></p>
+  <div class="end-names" id="end-names"></div>
+  <button class="btn ghost" id="restart-btn">Play Again ↺</button>
+</section>
+
+<script>
+  const PEOPLE = [
+    { name: "Raushan", facts: [
+      "My commute used to take two hours each way.",
+      "I once sent a company-wide email that was meant for one person.",
+      "I once fell asleep in a meeting, and nobody noticed.",
+    ]},
+    { name: "Hemanth", facts: [
+      "I once travelled somewhere mainly because I wanted to try one particular dish.",
+      "I've watched the same film more than 10 times and would happily watch it again.",
+      "I'm surprisingly competitive when it comes to games, even if I pretend I'm playing just for fun.",
+    ]},
+    { name: "Poonam", facts: [
+      "I've secretly practised my Oscar acceptance speech.",
+      "I've gone on an international trip without knowing anyone in the group.",
+      "I've never lied about being five minutes away.",
+    ]},
+    { name: "Pranesh", facts: [
+      "I play football daily.",
+      "I am a car person.",
+      "I love both formal and casual outfits.",
+    ]},
+    { name: "Digendra", facts: [
+      "I have blamed slow internet for something that was actually my fault.",
+      "I have missed flights multiple times.",
+      "I have cheated during a job interview.",
+    ]},
+    { name: "Shivanand", facts: [
+      "I can spend 30 minutes deciding what to eat and still end up ordering the same thing every time. 😂",
+      "I am an advanced badminton player.",
+      "My life partner never fights with me.",
+    ]},
+    { name: "Aditya", facts: [
+      "I've driven a car for 18.5 hours in a day.",
+      "I've been on a single non-official phone call for 8.5 hours in a day.",
+      "I've slept for 22.5 hours at one time.",
+    ]},
+    { name: "Manisha", facts: [
+      "While snorkeling at Nusa Penida in Bali, a giant manta ray accidentally bumped into my GoPro.",
+      "I tore my thumb ligament while trying to pop up on my surfboard in Mulki.",
+      "While driving through Spiti Valley to Chandratal, a falling boulder hit our vehicle and completely broke the tire rim.",
+    ]},
+    { name: "Amulya", facts: [
+      "I can sleep for 10+ hours.",
+      "I started my IT journey as a developer.",
+      "I can eat ice cream even during winter.",
+    ]},
+    { name: "Richard", facts: [
+      "I've been on a plane that landed on a beach.",
+      "I've done a bricklaying course.",
+      "I've missed my stop on a train, and ended up in Scotland.",
+    ]},
+  ];
+
+  const TEAM = [
+    "Bikash", "Manisha", "Poonam", "Prashant", "Sathish", "Shiva", "Digendra",
+    "Amulya", "Anusha", "Keerthi", "Pushpavathi", "Sahithi", "Sree", "Subramani",
+  ];
+
+  const ALL_NAMES = [...new Set([...TEAM, ...PEOPLE.map((p) => p.name)])].sort();
+
+  const READ_SECONDS = 30;
+  const NAME_DISCUSS_SECONDS = 30;
+  const LIE_DISCUSS_SECONDS = 30;
+  const MAX_PICKS = 2;
+
+  const $ = (id) => document.getElementById(id);
+
+  let order = [];
+  let idx = 0;
+  let score = 0;
+  let picks = [];
+  let lieIndex = null;
+  let canPickLie = false;
+
+  /* Timer */
+  const timer = { total: 0, remaining: 0, onEnd: null, interval: null, paused: false, last: 0 };
+
+  function setupTimer(seconds, label, onEnd) {
+    stopTimer();
+    timer.total = seconds * 1000;
+    timer.remaining = timer.total;
+    timer.onEnd = onEnd;
+    timer.paused = false;
+    $("timer").classList.remove("hidden");
+    $("timer-label").textContent = label;
+    $("timer-start-btn").classList.remove("hidden");
+    $("pause-btn").classList.add("hidden");
+    $("skip-btn").classList.remove("hidden");
+    renderTimer();
+  }
+
+  function runTimer() {
+    timer.last = Date.now();
+    timer.paused = false;
+    $("timer-start-btn").classList.add("hidden");
+    $("pause-btn").classList.remove("hidden");
+    $("pause-btn").textContent = "⏸ Pause";
+    timer.interval = setInterval(tickTimer, 200);
+  }
+
+  function tickTimer() {
+    const now = Date.now();
+    if (!timer.paused) timer.remaining -= now - timer.last;
+    timer.last = now;
+    if (timer.remaining <= 0) {
+      timer.remaining = 0;
+      renderTimer();
+      finishTimer();
+      return;
+    }
+    renderTimer();
+  }
+
+  function finishTimer() {
+    const cb = timer.onEnd;
+    stopTimer();
+    $("timer").classList.add("done");
+    $("timer-start-btn").classList.add("hidden");
+    $("pause-btn").classList.add("hidden");
+    $("skip-btn").classList.add("hidden");
+    if (cb) cb();
+  }
+
+  function stopTimer() {
+    clearInterval(timer.interval);
+    timer.interval = null;
+    timer.onEnd = null;
+  }
+
+  function hideTimer() {
+    stopTimer();
+    $("timer").classList.add("hidden");
+  }
+
+  function renderTimer() {
+    const secs = Math.ceil(timer.remaining / 1000);
+    $("timer-num").textContent = secs;
+    $("timer-fill").style.width = `${(timer.total ? timer.remaining / timer.total : 0) * 100}%`;
+    const el = $("timer");
+    el.classList.remove("warn", "danger", "done");
+    if (timer.remaining < timer.total) {
+      if (secs <= 5) el.classList.add("danger");
+      else if (secs <= 10) el.classList.add("warn");
+    }
+  }
+
+  function togglePause() {
+    if (!timer.interval) return;
+    timer.paused = !timer.paused;
+    $("pause-btn").textContent = timer.paused ? "▶ Resume" : "⏸ Pause";
+  }
+
+  /* Game flow */
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function show(id) {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+    $(id).classList.add("active");
+    window.scrollTo(0, 0);
+  }
+
+  function startGame() {
+    order = shuffle(PEOPLE);
+    idx = 0;
+    score = 0;
+    loadRound();
+  }
+
+  function loadRound() {
+    const person = order[idx];
+    picks = [];
+    lieIndex = null;
+    canPickLie = false;
+    show("round-screen");
+
+    $("round-label").textContent = `Person ${idx + 1} of ${order.length}`;
+    $("progress-bar").style.width = `${(idx / order.length) * 100}%`;
+    $("score-label").textContent = `⭐ ${score}`;
+    $("round-heading").innerHTML = "Whose facts are these? 🤔";
+
+    const facts = $("facts");
+    facts.className = "facts";
+    facts.innerHTML = "";
+    person.facts.forEach((text, i) => {
+      const el = document.createElement("div");
+      el.className = "fact";
+      el.innerHTML = `<span class="tag">Team says LIE 🤥</span><span class="num">${i + 1}</span><span></span>`;
+      el.lastElementChild.textContent = text;
+      el.addEventListener("click", () => pickLie(i));
+      facts.appendChild(el);
+    });
+
+    $("msg-panel").classList.remove("hidden");
+    $("msg-panel").innerHTML = "📖 Read all three facts carefully...";
+    $("pick-panel").classList.add("hidden");
+    $("reveal-panel").classList.add("hidden");
+    $("reveal-panel").classList.remove("flash-good");
+    $("lock-btn").disabled = true;
+
+    setupTimer(READ_SECONDS, "📖 Reading time", startNameDiscussion);
+  }
+
+  function startNameDiscussion() {
+    $("msg-panel").innerHTML = "💬 Discuss as a team: <b>who wrote these facts?</b>";
+    setupTimer(NAME_DISCUSS_SECONDS, "💬 Who wrote this?", showNamePicker);
+  }
+
+  function showNamePicker() {
+    hideTimer();
+    $("msg-panel").classList.add("hidden");
+    $("pick-panel").classList.remove("hidden");
+    const box = $("names");
+    box.innerHTML = "";
+    ALL_NAMES.forEach((name) => {
+      const b = document.createElement("button");
+      b.className = "name-btn";
+      b.textContent = name;
+      b.addEventListener("click", () => togglePick(name, b));
+      box.appendChild(b);
+    });
+    updatePickState();
+  }
+
+  function togglePick(name, btn) {
+    if (picks.includes(name)) {
+      picks = picks.filter((n) => n !== name);
+      btn.classList.remove("selected");
+    } else if (picks.length < MAX_PICKS) {
+      picks.push(name);
+      btn.classList.add("selected");
+    }
+    updatePickState();
+  }
+
+  function updatePickState() {
+    $("reveal-btn").disabled = picks.length === 0;
+    $("reveal-btn").textContent = picks.length
+      ? `Reveal the Name 🎭 (${picks.join(" & ")})`
+      : "Reveal the Name 🎭";
+  }
+
+  function revealName() {
+    const person = order[idx];
+    const correct = picks.includes(person.name);
+    if (correct) score++;
+
+    $("pick-panel").classList.add("hidden");
+    $("reveal-panel").classList.remove("hidden");
+    $("reveal-caption").textContent = correct ? "🎉 Nailed it! It's" : "😅 Not quite! These belong to";
+    $("reveal-name").textContent = person.name;
+    $("reveal-name").className = "reveal-name" + (correct ? " correct" : "");
+    $("score-label").textContent = `⭐ ${score}`;
+
+    const results = $("result-names");
+    results.innerHTML = "";
+    picks.forEach((name) => {
+      const b = document.createElement("span");
+      b.className = "name-btn " + (name === person.name ? "right" : "wrong");
+      b.textContent = name;
+      results.appendChild(b);
+    });
+
+    $("round-heading").innerHTML = `<span class="who">${person.name}'s</span> facts: which one is the lie?`;
+    canPickLie = true;
+    $("facts").classList.add("clickable");
+    setupTimer(LIE_DISCUSS_SECONDS, "💬 Which one is the lie?", () => {});
+
+    if (correct) {
+      confetti();
+      const rp = $("reveal-panel");
+      void rp.offsetWidth;
+      rp.classList.add("flash-good");
+    }
+  }
+
+  function pickLie(i) {
+    if (!canPickLie) return;
+    lieIndex = i;
+    document.querySelectorAll("#facts .fact").forEach((f, j) => f.classList.toggle("picked", j === i));
+    $("lock-btn").disabled = false;
+  }
+
+  function lockLie() {
+    if (lieIndex === null) return;
+    hideTimer();
+    canPickLie = false;
+    const person = order[idx];
+    $("story-name").textContent = person.name;
+    $("verdict").textContent = "";
+    $("story-hint").classList.remove("hidden");
+    const list = $("story-facts");
+    list.innerHTML = "";
+    person.facts.forEach((text, i) => {
+      const el = document.createElement("div");
+      el.className = "fact" + (i === lieIndex ? " picked" : "");
+      el.innerHTML = `<span class="stamp">ACTUAL LIE 🎯</span><span class="tag">Team says LIE 🤥</span><span class="num">${i + 1}</span><span></span>`;
+      el.lastElementChild.textContent = text;
+      el.addEventListener("click", () => revealActualLie(el, i));
+      list.appendChild(el);
+    });
+    $("next-btn").textContent = idx === order.length - 1 ? "See Results 🏁" : "Next Person ➜";
+    show("story-screen");
+  }
+
+  function revealActualLie(el, i) {
+    document.querySelectorAll("#story-facts .fact").forEach((f) => f.classList.remove("actual"));
+    el.classList.add("actual");
+    $("story-hint").classList.add("hidden");
+    if (i === lieIndex) {
+      $("verdict").textContent = "🎉 The team spotted the lie!";
+      confetti();
+    } else {
+      $("verdict").textContent = `😈 ${order[idx].name} fooled everyone!`;
+    }
+  }
+
+  function nextRound() {
+    stopTimer();
+    idx++;
+    if (idx >= order.length) endGame();
+    else loadRound();
+  }
+
+  function endGame() {
+    $("end-score").textContent = `The team guessed ${score} out of ${order.length} people correctly!`;
+    $("end-names").innerHTML = PEOPLE.map((p) => `<span class="pill">${p.name}</span>`).join("");
+    show("end-screen");
+    confetti(250);
+  }
+
+  /* Confetti */
+  const canvas = $("confetti");
+  const ctx = canvas.getContext("2d");
+  let particles = [];
+  let animating = false;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  function confetti(count = 160) {
+    const colors = ["#facc15", "#22c55e", "#3b82f6", "#ec4899", "#f97316", "#a855f7", "#ffffff"];
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+        y: canvas.height * 0.55,
+        vx: (Math.random() - 0.5) * 18,
+        vy: -Math.random() * 18 - 6,
+        size: Math.random() * 8 + 5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.3,
+        life: 0,
+      });
+    }
+    if (!animating) {
+      animating = true;
+      requestAnimationFrame(tick);
+    }
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((p) => {
+      p.vy += 0.45;
+      p.vx *= 0.99;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      p.life++;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      ctx.restore();
+    });
+    particles = particles.filter((p) => p.y < canvas.height + 40 && p.life < 400);
+    if (particles.length) {
+      requestAnimationFrame(tick);
+    } else {
+      animating = false;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  $("start-btn").addEventListener("click", startGame);
+  $("timer-start-btn").addEventListener("click", runTimer);
+  $("pause-btn").addEventListener("click", togglePause);
+  $("skip-btn").addEventListener("click", finishTimer);
+  $("reveal-btn").addEventListener("click", revealName);
+  $("lock-btn").addEventListener("click", lockLie);
+  $("next-btn").addEventListener("click", nextRound);
+  $("restart-btn").addEventListener("click", () => show("title-screen"));
+</script>
+</body>
+</html>
